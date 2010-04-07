@@ -38,6 +38,7 @@ def get_resource_pdf_links(the_page):
 	return resource_list
 
 def get_events(page):
+	""" XXX: fix this up to get the actual description instead of the description for the event following the due date """
 	data = page.split("\n")
 	data.sort()
 	events = [j +"\n" for i in data for j in i.split("Due") if "2010" in j and "forum" not in j]
