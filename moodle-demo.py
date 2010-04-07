@@ -61,7 +61,6 @@ def get_events(page):
 	return result
 
 def create_directory(dir_loc):
-	mq_dir = os.path.expanduser(dir_loc)
 	if os.path.exists(dir_loc) == False:
 		os.mkdir(dir_loc)
 		os.chmod(dir_loc, 16832)
