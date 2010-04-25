@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 import urllib
 import urllib2
 import re
@@ -7,9 +7,10 @@ import StringIO
 import sys
 import os
 import getpass
+import BeautifulSoup
 
 __author__ = "dave bl. db@d1b.org"
-__version__= "0.1"
+__version__= "0.2"
 __license__= "gpl v2"
 __program__ = "FOS moodle schedule info / file downloader"
 
@@ -28,28 +29,40 @@ def strip_tags(value):
 def get_resource_pdf_links(the_page):
 	""" returns a list of pdf resource urls """
 	resource_list = []
-	data = the_page.split("\n")
-	for i in data:
+	for i in the_page.split("\n"):
 		if "/resource" in i and "PDF" in i:
 			index_offset = i.find("href=")
 			index_end = i.find('"><img src')
-			res = i[index_offset+6:index_end]
-			resource_list.append(res)
+			if index_end !=-1 and index_offset != -1:
+				res = i[index_offset+6:index_end]
+				resource_list.append(res)
 	return resource_list
 
+def get_alt_resource_pdf_link(the_page):
+	""" returns the actual location of a pdf if the poster has put a 'preview page' in front of it """
+	for i in the_page.split("\n"):
+		if "resourcepdf" in i:
+			index_offset = i.find("href=")
+			index_end = i.find(""".pdf">""")
+			if index_end != -1 and index_offset != -1:
+				return i[index_offset+6:index_end+4]
+
 def get_events(page):
-	""" XXX: fix this up to get the actual description instead of the description for the event following the due date """
-	data = page.split("\n")
-	data.sort()
-	events = [j +"\n" for i in data for j in i.split("Due") if "2010" in j and "forum" not in j]
+	events = []
 	submited = []
 	not_submited = []
 	graded = []
+	soup = BeautifulSoup.BeautifulSoup(page)
+	for i in soup.findAll("div", { "class" :"assignment overview"} ):
+		event = strip_tags(str(i))
+		if "2010" in event:
+			events.append(event)
 	for i in events:
 		i = i.replace("PM","PM ")
 		i = i.replace("AM", "AM ")
+		i = i.replace("Due", " Due")
 		i = i.strip()
-		i = i +"\n"
+		i = i + "\n"
 		if "not submitted" in i.lower():
 			 not_submited.append(return_red(i))
 		elif "graded" in i.lower() and "not graded" not in i.lower():
@@ -57,7 +70,6 @@ def get_events(page):
 		elif "submitted," in i.lower():
 			submited.append(return_blue(i))
 	result = graded + submited + not_submited
-
 	return result
 
 def create_directory(dir_loc):
@@ -75,7 +87,7 @@ def get_user_credentials_from_user_input(conn_details):
 	conn_details["password"] = getpass.getpass("enter your password\n")
 	return conn_details
 
-def get_moodle(url_login, url_target, conn_details):
+def fetch_from_moodle(url_login, url_target, conn_details):
 	submit_data_t = [ ('username', str(conn_details["username"]) ), ('password', conn_details["password"])  ]
 	submit_data_t = urllib.urlencode(submit_data_t)
 	cookie_loc = os.path.expanduser("~/.mq/moodle_cookie")
@@ -111,7 +123,17 @@ def get_moodle(url_login, url_target, conn_details):
 			connection.setopt(pycurl.URL, i)
 			connection.perform()
 			temp_file = str(new_s.getvalue())
-			real_url =  connection.getinfo(pycurl.EFFECTIVE_URL)
+			real_url = connection.getinfo(pycurl.EFFECTIVE_URL)
+			if "https://moodle.comp.mq.edu.au/mod/resource/view.php?id=" in real_url:
+				new_s = StringIO.StringIO()
+				actual_res_loc = get_alt_resource_pdf_link(temp_file)
+				connection.setopt(pycurl.FOLLOWLOCATION, False)
+				connection.setopt(pycurl.WRITEFUNCTION, new_s.write)
+				connection.setopt(pycurl.URL, actual_res_loc)
+				connection.perform()
+				temp_file = str(new_s.getvalue())
+				real_url = connection.getinfo(pycurl.EFFECTIVE_URL)
+
 			new_s = StringIO.StringIO()
 			print real_url
 			name_from_last_url = real_url.rfind("/")
@@ -120,8 +142,6 @@ def get_moodle(url_login, url_target, conn_details):
 		connection.close()
 		return None
 	connection.close()
-	the_page = strip_tags(the_page)
-
 	return the_page
 
 def write_to_a_file(data,full_file_loc):
@@ -191,7 +211,7 @@ def main():
 	elif "s" in  choice:
 		target_url = url_events
 
-	page = get_moodle(url_login, target_url, conn_details)
+	page = fetch_from_moodle(url_login, target_url, conn_details)
 
 	if page != None:
 		events = get_events(page)
