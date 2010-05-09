@@ -139,7 +139,7 @@ def fetch_from_moodle(url_login, url_target, conn_details):
 			res_name = real_url[name_from_last_url+1:]
 			full_file_loc = "/tmp/PDF/" + res_name
 
-			assert os.path.abspath(full_file_loc).startswith("/tmp/PDF/"), " assert that we are only going to write the file to /tmp/PDF/"
+			assert os.path.realpath(full_file_loc).startswith("/tmp/PDF/"), " assert that we are only going to write the file to /tmp/PDF/"
 			write_to_a_file(temp_file, full_file_loc)
 		connection.close()
 		return None
