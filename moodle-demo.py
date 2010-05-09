@@ -134,11 +134,13 @@ def fetch_from_moodle(url_login, url_target, conn_details):
 				temp_file = str(new_s.getvalue())
 				real_url = connection.getinfo(pycurl.EFFECTIVE_URL)
 
-			new_s = StringIO.StringIO()
 			print real_url
 			name_from_last_url = real_url.rfind("/")
 			res_name = real_url[name_from_last_url+1:]
-			write_to_a_file(temp_file, "/tmp/PDF/"+res_name)
+			full_file_loc = "/tmp/PDF/" + res_name
+
+			assert os.path.abspath(full_file_loc).startswith("/tmp/PDF/"), " assert that we are only going to write the file to /tmp/PDF/"
+			write_to_a_file(temp_file, full_file_loc)
 		connection.close()
 		return None
 	connection.close()
@@ -222,4 +224,3 @@ def main():
 
 if __name__=='__main__':
 	main()
-
