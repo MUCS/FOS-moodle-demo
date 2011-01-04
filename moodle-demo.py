@@ -6,6 +6,7 @@ import sys
 import os
 import getpass
 from lxml import html
+from store_and_fetch_auth import AuthDetails
 
 __author__ = "dave bl. db@d1b.org"
 __version__= "0.3"
@@ -148,36 +149,17 @@ def write_to_a_file(data,full_file_loc):
 	the_file.write(data)
 	the_file.close()
 
-def read_from_a_file(full_file_loc,return_type ):
-	the_file = open(full_file_loc, 'r')
-	if return_type == "read":
-		return_type = the_file.read()
-	if return_type == "readlines":
-		return_type = the_file.readlines()
-	the_file.close()
-	return return_type
-
-def save_credentials_to_accounts_file(username,password,file_loc):
-	assert username != ""
-	assert password != ""
-	write_to_a_file("username="+username +"\n" +"password="+password+"\n", file_loc)
+def save_credentials_to_accounts_file(username, password, file_loc):
+	config = AuthDetails(file_loc, username, password)
+	config.store_user_pass()
 
 def get_credentials_from_accounts_file(conn_details):
 	account_file_loc = os.path.expanduser("~/.mq/moodle_ics_account")
-	username = ""
-	password = ""
-	the_file = read_from_a_file(account_file_loc, "readlines")
-	for line in the_file:
-		if "username=" in line:
-			index = line.find("=")
-			assert index +1 < len(line)
-			username = line[index+1:-1]
-		if "password=" in line:
-			index = line.find("=")
-			assert index +1 < len(line)
-			password = line[index+1:-1]
-	conn_details["username"] = username
-	conn_details["password"] = password
+	config = AuthDetails(account_file_loc)
+	config.read_config()
+
+	conn_details["username"] = config.get_username()
+	conn_details["password"] = config.get_password()
 	return conn_details
 
 def delete_cookie(folder_loc):
