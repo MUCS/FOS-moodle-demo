@@ -32,9 +32,9 @@ class AuthDetails(object):
 
 def main():
 	""" just a quick usage test """
-	s = AuthDetails("/tmp/testme123", "myusername", "mypassword")
+	s = AuthDetails("testme123", "myusername", "mypassword")
 	s.store_user_pass()
-	x = AuthDetails("/tmp/testme123")
+	x = AuthDetails("testme123")
 	x.read_config()
 	assert x.get_username() == "myusername"
 	assert x.get_password() == "mypassword"
