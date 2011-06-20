@@ -7,6 +7,7 @@ import os
 import getpass
 from lxml import html
 from store_and_fetch_auth import AuthDetails
+from tempfile import mkdtemp
 
 __author__ = "dave bl. db@d1b.org"
 __version__= "0.3"
@@ -109,14 +110,7 @@ def get_moodle(url_login, url_target, conn_details):
 	the_page = str(string_s.getvalue())
 	return the_page, connection
 
-
-def create_tmp_dir(dir_path):
-	try:
-		create_directory(dir_path)
-	except Exception, e:
-		print e
-
-def download_resources_using_connection_from_resource_page(the_page, connection, dir_path="/tmp/moodle_dl"):
+def download_resources_using_connection_from_resource_page(the_page, connection, dir_path=None):
 	resources = get_resources_from_resource_page(the_page)
 	create_directory(dir_path)
 	for name, link in resources.items():
@@ -184,14 +178,15 @@ def main():
 	url_login = "https://moodle.comp.mq.edu.au/login/index.php"
 	url_events = "https://moodle.comp.mq.edu.au/my/index.php"
 	url_course = "https://moodle.comp.mq.edu.au/mod/resource/index.php?id=68"
-
 	conn_details = get_auth_information(conn_details)
+	temp_folder = mkdtemp()
 
 	print "enter dl for downloading course material otherwise press s for due dates etc."
 	choice = get_input()
+
 	if "dl" in choice:
 		print return_red("NOTE: the default course url is for COMP332 and will not work for other courses!")
-		print return_red("files will be downloaded to /tmp/moodle_dl/")
+		print return_red("files will be downloaded to %s" % temp_folder )
 		target_url = url_course
 	elif "s" in  choice:
 		target_url = url_events
@@ -202,7 +197,7 @@ def main():
 		for i in events:
 			print i
 	else:
-		download_resources_using_connection_from_resource_page(the_page, connection)
+		download_resources_using_connection_from_resource_page(the_page, connection, temp_folder)
 
 	connection.close()
 	delete_cookie(os.path.expanduser("~/.mq/") )
